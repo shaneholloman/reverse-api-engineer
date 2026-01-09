@@ -32,13 +32,17 @@ from .tui import (
 from .utils import (
     generate_folder_name,
     generate_run_id,
+    get_actions_path,
     get_config_path,
     get_har_dir,
     get_history_path,
+    get_scripts_dir,
     get_timestamp,
     parse_engineer_prompt,
     parse_record_only_tag,
+    parse_codegen_tag,
 )
+from .playwright_codegen import PlaywrightCodeGenerator
 
 console = Console()
 config_manager = ConfigManager(get_config_path())
@@ -105,6 +109,7 @@ def prompt_interactive_options(
                 # Tags for manual/agent modes with descriptions
                 tags = [
                     ("@record-only", "record HAR only, skip reverse engineering"),
+                    ("@codegen", "record actions and generate Playwright script"),
                     ("@help", "show mode-specific help"),
                 ]
                 for tag, meta in tags:
@@ -885,6 +890,9 @@ def handle_manual_help(mode_color=THEME_PRIMARY):
     table.add_row("@record-only [prompt]", "Record HAR only, skip reverse engineering.\n[dim]Example: @record-only[/dim]")
     table.add_row("", "")
 
+    table.add_row("@codegen [prompt]", "Record actions and generate Playwright script.\n[dim]Example: @codegen navigate to google[/dim]")
+    table.add_row("", "")
+
     table.add_row("Shift+Tab", "Cycle to other modes (Engineer, Agent).")
 
     console.print(table)
@@ -1109,7 +1117,11 @@ def run_manual_capture(prompt=None, url=None, reverse_engineer=True, model=None,
 
     # Parse @record-only tag - if present, skip reverse engineering
     prompt, is_record_only = parse_record_only_tag(prompt)
+    prompt, is_codegen = parse_codegen_tag(prompt)
+    
     if is_record_only:
+        reverse_engineer = False
+    if is_codegen:
         reverse_engineer = False
 
     run_id = generate_run_id()
@@ -1128,7 +1140,12 @@ def run_manual_capture(prompt=None, url=None, reverse_engineer=True, model=None,
         paths={"har_dir": str(get_har_dir(run_id, output_dir))},
     )
 
-    browser = ManualBrowser(run_id=run_id, prompt=prompt, output_dir=output_dir)
+    browser = ManualBrowser(
+        run_id=run_id, 
+        prompt=prompt, 
+        output_dir=output_dir,
+        enable_action_recording=is_codegen
+    )
     har_path = browser.start(start_url=url)
 
     if reverse_engineer:
@@ -1147,6 +1164,9 @@ def run_manual_capture(prompt=None, url=None, reverse_engineer=True, model=None,
                 usage=result.get("usage", {}),
                 paths={"script_path": result.get("script_path")},
             )
+    elif is_codegen:
+        # Generate Playwright script from recorded actions
+        run_playwright_codegen(run_id, prompt, output_dir, start_url=url)
     elif is_record_only:
         # Show helpful message for record-only mode
         console.print(" [dim]>[/dim] [white]recording complete[/white]")
@@ -1382,6 +1402,51 @@ def run_auto_capture(prompt=None, url=None, model=None, output_dir=None):
 
         traceback.print_exc()
         return None
+
+
+def run_playwright_codegen(
+    run_id: str, 
+    prompt: str, 
+    output_dir: str | None = None,
+    start_url: str | None = None
+):
+    """Generate Playwright script from recorded actions."""
+    actions_path = get_actions_path(run_id, output_dir)
+    if not actions_path.exists():
+        console.print(" [red]error:[/red] no actions recorded")
+        return
+    
+    from .action_recorder import ActionRecorder
+    
+    actions = ActionRecorder.load(actions_path)
+    action_list = actions.get_actions()
+    
+    # If no explicit start_url, extract from first navigate action
+    if not start_url and action_list:
+        if action_list[0].type == "navigate" and action_list[0].url:
+            start_url = action_list[0].url
+    
+    generator = PlaywrightCodeGenerator(action_list, start_url=start_url)
+    script = generator.generate()
+    
+    scripts_dir = get_scripts_dir(run_id, output_dir)
+    
+    # Handle duplicate file paths
+    script_path = scripts_dir / "automation.py"
+    if script_path.exists():
+        i = 1
+        while (scripts_dir / f"automation_{i}.py").exists():
+            i += 1
+        script_path = scripts_dir / f"automation_{i}.py"
+    
+    script_path.write_text(script)
+    
+    # Also write requirements.txt
+    (scripts_dir / "requirements.txt").write_text("playwright\n")
+    
+    console.print(" [dim]>[/dim] [white]codegen complete[/white]")
+    console.print(f" [dim]>[/dim] [white]{script_path}[/white]")
+    console.print(f" [dim]>[/dim] [dim]run with: uv run python {script_path}[/dim]\n")
 
 
 @main.command()

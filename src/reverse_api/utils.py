@@ -327,6 +327,24 @@ def parse_record_only_tag(prompt: str) -> tuple[str, bool]:
     return prompt, False
 
 
+def parse_codegen_tag(prompt: str) -> tuple[str, bool]:
+    """Parse @codegen tag from prompt.
+
+    When present, records actions and generates Playwright script instead of API client.
+
+    Returns:
+        tuple: (cleaned_prompt, is_codegen)
+    """
+    if not prompt:
+        return "", False
+
+    pattern = r"@codegen\s*"
+    if re.search(pattern, prompt, re.IGNORECASE):
+        cleaned = re.sub(pattern, "", prompt, flags=re.IGNORECASE).strip()
+        return cleaned, True
+    return prompt, False
+
+
 def generate_run_id() -> str:
     """Generate a unique run ID using a short UUID format."""
     return uuid.uuid4().hex[:12]
@@ -367,6 +385,12 @@ def get_har_dir(run_id: str, output_dir: str | None = None) -> Path:
     har_dir = base_dir / "har" / run_id
     har_dir.mkdir(parents=True, exist_ok=True)
     return har_dir
+
+
+def get_actions_path(run_id: str, output_dir: str | None = None) -> Path:
+    """Get the actions JSON file path for a specific run."""
+    har_dir = get_har_dir(run_id, output_dir)
+    return har_dir / "actions.json"
 
 
 def get_scripts_dir(run_id: str, output_dir: str | None = None) -> Path:
