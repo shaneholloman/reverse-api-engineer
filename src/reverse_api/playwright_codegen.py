@@ -1,5 +1,6 @@
 """Generates Playwright automation scripts from recorded actions."""
 
+import json
 from typing import List
 
 from .action_recorder import RecordedAction
@@ -15,7 +16,6 @@ class PlaywrightCodeGenerator:
     def _clean_actions(self, actions: List[RecordedAction]) -> List[RecordedAction]:
         """Clean up actions (deduplicate fills, remove redundant events)."""
         cleaned = []
-        last_fill_selector = None
         
         for i, action in enumerate(actions):
             # For 'fill' actions on the same selector, only keep the last one
@@ -84,7 +84,7 @@ class PlaywrightCodeGenerator:
 
         if self.start_url:
             lines.append(f'        # Start URL')
-            lines.append(f'        page.goto("{self.start_url}")')
+            lines.append(f'        page.goto({json.dumps(self.start_url)})')
             lines.append("")
 
         current_url = self.start_url
@@ -92,21 +92,20 @@ class PlaywrightCodeGenerator:
 
         for action in self.actions:
             if action.type == "click":
-                lines.append(f"        page.click('{action.selector}')")
+                lines.append(f"        page.click({json.dumps(action.selector)})")
             
-            elif action.type == "fill" and action.value:
-                # Escape quotes in value
-                value = action.value.replace('\"', '\\\"')
-                lines.append(f"        page.fill('{action.selector}', \"{value}\")")
+            elif action.type == "fill" and action.value is not None:
+                # Use json.dumps to safely escape newlines, quotes, and backslashes
+                lines.append(f"        page.fill({json.dumps(action.selector)}, {json.dumps(action.value)})")
             
             elif action.type == "press":
-                lines.append(f"        page.press('{action.selector}', '{action.value}')")
+                lines.append(f"        page.press({json.dumps(action.selector)}, {json.dumps(action.value)})")
             
             elif action.type == "navigate":
                 # Skip if same as start URL or very similar (just different query params)
                 nav_base = self._get_base_url(action.url)
                 if nav_base != last_nav_base:
-                    lines.append(f"        page.goto('{action.url}')")
+                    lines.append(f"        page.goto({json.dumps(action.url)})")
                     last_nav_base = nav_base
                 else:
                     continue  # Skip duplicate navigation, don't add delay

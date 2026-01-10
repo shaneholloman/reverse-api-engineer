@@ -288,7 +288,7 @@ class ManualBrowser:
                 if ((element.tagName === 'BUTTON' || element.role === 'button') && element.innerText) {
                     const text = element.innerText.trim().substring(0, 30);
                     if (text && !text.includes('\\n')) {
-                        return 'button:has-text("' + text.replace(/"/g, '\\\\"') + '")';
+                        return 'button:has-text(' + JSON.stringify(text) + ')';
                     }
                 }
                 
@@ -296,7 +296,7 @@ class ManualBrowser:
                 if (element.tagName === 'A' && element.innerText) {
                     const text = element.innerText.trim().substring(0, 30);
                     if (text && !text.includes('\\n')) {
-                        return 'a:has-text("' + text.replace(/"/g, '\\\\"') + '")';
+                        return 'a:has-text(' + JSON.stringify(text) + ')';
                     }
                 }
                 
@@ -667,9 +667,12 @@ class ManualBrowser:
         console.print(" [dim]metadata synced[/dim]")
 
         if self.action_recorder:
-            actions_path = self.har_dir / "actions.json"
-            self.action_recorder.save(actions_path)
-            console.print(" [dim]actions saved[/dim]")
+            try:
+                actions_path = self.har_dir / "actions.json"
+                self.action_recorder.save(actions_path)
+                console.print(" [dim]actions saved[/dim]")
+            except Exception as e:
+                console.print(f" [yellow]warning: error saving actions: {e}[/yellow]")
 
         return self.har_path
 

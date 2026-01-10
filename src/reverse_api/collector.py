@@ -197,7 +197,7 @@ When complete, briefly summarize what was collected.
         sources: set[str] = set()
 
         if items_path.exists():
-            with open(items_path) as f:
+            with open(items_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -219,7 +219,7 @@ When complete, briefly summarize what was collected.
 
         # Export JSON
         json_path = self._collected_dir / "data.json"
-        with open(json_path, "w") as f:
+        with open(json_path, "w", encoding="utf-8") as f:
             json.dump(collected_items, f, indent=2)
 
         # Export CSV
@@ -277,7 +277,7 @@ When complete, briefly summarize what was collected.
         # Sort keys for consistent column order
         fieldnames = sorted(all_keys)
 
-        with open(csv_path, "w", newline="") as f:
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for item in items:
@@ -314,5 +314,5 @@ When complete, briefly summarize what was collected.
             for key in sorted(all_keys):
                 readme_content += f"- `{key}`\n"
 
-        with open(readme_path, "w") as f:
+        with open(readme_path, "w", encoding="utf-8") as f:
             f.write(readme_content)
