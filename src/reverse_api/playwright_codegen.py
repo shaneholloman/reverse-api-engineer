@@ -98,7 +98,7 @@ class PlaywrightCodeGenerator:
                 # Use json.dumps to safely escape newlines, quotes, and backslashes
                 lines.append(f"        page.fill({json.dumps(action.selector)}, {json.dumps(action.value)})")
             
-            elif action.type == "press" and action.selector:
+            elif action.type == "press" and action.selector and action.value is not None:
                 lines.append(f"        page.press({json.dumps(action.selector)}, {json.dumps(action.value)})")
             
             elif action.type == "navigate":
