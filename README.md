@@ -1,10 +1,10 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/kalil0321/reverse-api-engineer/main/assets/reverse-api-banner.svg" alt="Reverse API Engineer Banner">
+  <br><br>
+  <a href="https://pypi.org/project/reverse-api-engineer/"><img src="https://img.shields.io/pypi/v/reverse-api-engineer?style=flat-square&color=red" alt="PyPI"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-red?style=flat-square" alt="Python"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-red?style=flat-square" alt="License"></a>
 </div>
-
-[![PyPI](https://img.shields.io/pypi/v/reverse-api-engineer?style=flat-square&color=red)](https://pypi.org/project/reverse-api-engineer/)
-[![Python](https://img.shields.io/badge/python-3.11+-red?style=flat-square)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-red?style=flat-square)](https://opensource.org/licenses/MIT)
 
 CLI tool that captures browser traffic and automatically generates production-ready Python API clients. No more manual reverse engineering—just browse, capture, and get clean API code.
 
