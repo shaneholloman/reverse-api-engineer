@@ -5,7 +5,7 @@
 export function generateRunId(): string {
   // Generate short UUID with crx prefix
   // Format: crx-xxxxxxxx (8 hex characters)
-  const shortUuid = Math.random().toString(16).substring(2, 10)
+  const shortUuid = Math.random().toString(16).substring(2, 10).padEnd(8, '0')
   return `crx-${shortUuid}`
 }
 
