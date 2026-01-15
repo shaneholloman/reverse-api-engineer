@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 import questionary
+import setproctitle
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import Completer, Completion
@@ -18,6 +19,7 @@ from .browser import ManualBrowser, run_agent_browser
 from .config import ConfigManager
 from .engineer import run_reverse_engineering
 from .messages import MessageStore
+from .playwright_codegen import PlaywrightCodeGenerator
 from .session import SessionManager
 from .tui import (
     ERROR_CTA,
@@ -38,11 +40,10 @@ from .utils import (
     get_history_path,
     get_scripts_dir,
     get_timestamp,
+    parse_codegen_tag,
     parse_engineer_prompt,
     parse_record_only_tag,
-    parse_codegen_tag,
 )
-from .playwright_codegen import PlaywrightCodeGenerator
 
 console = Console()
 config_manager = ConfigManager(get_config_path())
@@ -344,6 +345,7 @@ def prompt_interactive_options(
 @click.version_option(version=__version__)
 def main(ctx: click.Context):
     """Reverse API - Capture browser traffic for API reverse engineering."""
+    setproctitle.setproctitle("reverse-api-engineer")
     if ctx.invoked_subcommand is None:
         repl_loop()
 
