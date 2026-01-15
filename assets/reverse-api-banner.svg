@@ -69,12 +69,12 @@
     </g>
 
     <!-- Title text -->
-    <text x="30" y="-10" font-family="'SF Mono', 'Monaco', 'Consolas', monospace" font-size="52" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="-1">
+    <text x="30" y="-10" font-family="monospace" font-size="52" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="-1">
       reverse-api-engineer
     </text>
 
     <!-- Tagline -->
-    <text x="30" y="35" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#888888" text-anchor="middle" letter-spacing="2">
+    <text x="30" y="35" font-family="sans-serif" font-size="18" fill="#888888" text-anchor="middle" letter-spacing="2">
       CAPTURE · ANALYZE · GENERATE
     </text>
   </g>
