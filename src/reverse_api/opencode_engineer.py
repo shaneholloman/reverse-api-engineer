@@ -27,6 +27,73 @@ def debug_log(msg: str):
         print(f"[{ts}] [DEBUG] {msg}")
 
 
+def format_error(e: Exception) -> str:
+    """Format exception with full details in a pretty, readable format."""
+    error_type = type(e).__name__
+    error_msg = str(e)
+    
+    # Build comprehensive error message with pretty formatting
+    lines = []
+    
+    # Main error line - always show error type and message
+    if error_msg:
+        lines.append(f"[bold red]✗ {error_type}[/bold red]")
+        lines.append(f"  {error_msg}")
+    else:
+        lines.append(f"[bold red]✗ {error_type}[/bold red] (no message)")
+    
+    # Add additional context for specific exception types
+    if isinstance(e, httpx.HTTPStatusError):
+        if hasattr(e, "response") and e.response is not None:
+            try:
+                status_code = e.response.status_code
+                status_text = e.response.reason_phrase or "Unknown"
+                lines.append(f"\n[dim]HTTP Status:[/dim] [yellow]{status_code}[/yellow] {status_text}")
+                
+                # Try to parse JSON response for better formatting
+                try:
+                    response_json = e.response.json()
+                    import json
+                    response_text = json.dumps(response_json, indent=2)[:1000]  # Limit to 1000 chars
+                    lines.append(f"\n[dim]Response Body:[/dim]")
+                    # Split into lines and indent
+                    for line in response_text.split("\n"):
+                        lines.append(f"  [dim]{line}[/dim]")
+                except Exception:
+                    # Fall back to text if not JSON
+                    response_text = e.response.text[:500]
+                    if response_text:
+                        lines.append(f"\n[dim]Response Body:[/dim]")
+                        lines.append(f"  [dim]{response_text}[/dim]")
+            except Exception:
+                pass
+    
+    elif isinstance(e, httpx.ConnectError):
+        lines.append(f"\n[dim]Unable to connect to OpenCode server[/dim]")
+        if error_msg and "Connection refused" not in error_msg:
+            lines.append(f"  [dim]{error_msg}[/dim]")
+    
+    elif isinstance(e, httpx.ReadError):
+        lines.append(f"\n[dim]Connection was interrupted while reading response[/dim]")
+        if error_msg:
+            lines.append(f"  [dim]{error_msg}[/dim]")
+    
+    elif isinstance(e, httpx.TimeoutException):
+        lines.append(f"\n[dim]Request timed out[/dim]")
+        if error_msg:
+            lines.append(f"  [dim]{error_msg}[/dim]")
+    
+    # In debug mode, include traceback
+    if DEBUG:
+        import traceback
+        tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        lines.append(f"\n[dim]Traceback:[/dim]")
+        for line in tb_str.split("\n"):
+            lines.append(f"  [dim]{line}[/dim]")
+    
+    return "\n".join(lines)
+
+
 class OpenCodeEngineer(BaseEngineer):
     """Uses OpenCode AI to analyze HAR files and generate Python API scripts."""
 
@@ -61,8 +128,7 @@ class OpenCodeEngineer(BaseEngineer):
         """Get HTTP Basic Auth object if password is configured."""
         if self.opencode_password:
             return httpx.BasicAuth(self.opencode_username, self.opencode_password)
-                        self.message_store.save_error("Authentication failed")
-                        return None
+        return None
 
     async def analyze_and_generate(self) -> dict[str, Any] | None:
         """Run the reverse engineering analysis with OpenCode."""
@@ -162,7 +228,9 @@ class OpenCodeEngineer(BaseEngineer):
                                     self.opencode_ui.model_info(provider_id, model_id)
                                     break
             except Exception as e:
-                debug_log(f"Failed to fetch session messages: {e}")
+                error_msg = format_error(e)
+                debug_log(f"Failed to fetch session messages: {error_msg}")
+                # Don't fail the whole operation if we can't fetch messages
 
             # Show session summary before success message
             self.opencode_ui.session_summary(self.usage_metadata)
@@ -185,19 +253,25 @@ class OpenCodeEngineer(BaseEngineer):
                     self.opencode_ui.console.print(f"[dim]Username: {self.opencode_username}[/dim]")
                 self.message_store.save_error("Authentication failed")
                 return None
-            error_msg = f"HTTP {e.response.status_code}: {str(e)}"
+            # Show detailed error including response body
+            error_msg = format_error(e)
+            debug_log(f"HTTPStatusError in analyze_and_generate: {error_msg}")
             self.opencode_ui.error(error_msg)
             self.message_store.save_error(error_msg)
             return None
 
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
+            error_msg = format_error(e)
+            debug_log(f"ConnectError in analyze_and_generate: {error_msg}")
             self.opencode_ui.error("Connection error")
+            self.opencode_ui.console.print(f"\n[dim]Details: {error_msg}[/dim]")
             self.opencode_ui.console.print("\n[dim]Please run: opencode serve[/dim]")
-            self.message_store.save_error("Connection error")
+            self.message_store.save_error(f"Connection error: {error_msg}")
             return None
 
         except Exception as e:
-            error_msg = str(e) if str(e) else "Unknown error"
+            error_msg = format_error(e)
+            debug_log(f"Exception in analyze_and_generate: {error_msg}")
             self.opencode_ui.error(error_msg)
             self.message_store.save_error(error_msg)
             return None
@@ -377,9 +451,11 @@ class OpenCodeEngineer(BaseEngineer):
                         return
 
         except httpx.ReadError as e:
-            self._last_error = f"Stream disconnected: {e}"
+            self._last_error = format_error(e)
+            debug_log(f"ReadError in _stream_events: {self._last_error}")
         except Exception as e:
-            self._last_error = str(e) if str(e) else "Stream error"
+            self._last_error = format_error(e)
+            debug_log(f"Exception in _stream_events: {self._last_error}")
 
     async def _handle_part_update(self, properties: dict, seen_parts: set):
         """Handle message.part.updated events."""

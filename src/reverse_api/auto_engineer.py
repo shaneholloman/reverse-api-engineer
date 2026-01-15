@@ -19,7 +19,7 @@ from claude_agent_sdk import (
 )
 
 from .engineer import ClaudeEngineer
-from .opencode_engineer import OpenCodeEngineer, debug_log
+from .opencode_engineer import OpenCodeEngineer, debug_log, format_error
 from .utils import get_har_dir
 
 # Suppress claude_agent_sdk logs
@@ -552,7 +552,8 @@ class OpenCodeAutoEngineer(OpenCodeEngineer):
             return None
 
         except Exception as e:
-            error_msg = str(e) if str(e) else "Unknown error"
+            error_msg = format_error(e)
+            debug_log(f"Exception in OpenCodeAutoEngineer.analyze_and_generate: {error_msg}")
             self.opencode_ui.error(error_msg)
             self.message_store.save_error(error_msg)
 

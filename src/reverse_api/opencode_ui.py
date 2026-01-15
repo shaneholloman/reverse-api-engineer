@@ -213,9 +213,15 @@ class OpenCodeUI:
         self.console.print()
 
     def error(self, message: str) -> None:
-        """Display error message."""
+        """Display error message with Rich formatting support."""
         self.console.print()
-        self.console.print(f" [dim]![/dim] [red]error:[/red] {message}")
+        # Check if message already contains Rich markup (from format_error)
+        if message.startswith("[") and "[/" in message:
+            # Message is already formatted with Rich markup
+            self.console.print(message)
+        else:
+            # Simple error format
+            self.console.print(f" [dim]![/dim] [red]error:[/red] {message}")
         self.console.print(f" [dim]{ERROR_CTA}[/dim]")
 
     def permission_requested(self, perm_type: str, title: str) -> None:
