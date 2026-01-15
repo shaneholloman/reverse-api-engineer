@@ -31,17 +31,17 @@ def format_error(e: Exception) -> str:
     """Format exception with full details in a pretty, readable format."""
     error_type = type(e).__name__
     error_msg = str(e)
-    
+
     # Build comprehensive error message with pretty formatting
     lines = []
-    
+
     # Main error line - always show error type and message
     if error_msg:
         lines.append(f"[bold red]✗ {error_type}[/bold red]")
         lines.append(f"  {error_msg}")
     else:
         lines.append(f"[bold red]✗ {error_type}[/bold red] (no message)")
-    
+
     # Add additional context for specific exception types
     if isinstance(e, httpx.HTTPStatusError):
         if hasattr(e, "response") and e.response is not None:
@@ -49,11 +49,12 @@ def format_error(e: Exception) -> str:
                 status_code = e.response.status_code
                 status_text = e.response.reason_phrase or "Unknown"
                 lines.append(f"\n[dim]HTTP Status:[/dim] [yellow]{status_code}[/yellow] {status_text}")
-                
+
                 # Try to parse JSON response for better formatting
                 try:
                     response_json = e.response.json()
                     import json
+
                     response_text = json.dumps(response_json, indent=2)[:1000]  # Limit to 1000 chars
                     lines.append(f"\n[dim]Response Body:[/dim]")
                     # Split into lines and indent
@@ -67,30 +68,31 @@ def format_error(e: Exception) -> str:
                         lines.append(f"  [dim]{response_text}[/dim]")
             except Exception:
                 pass
-    
+
     elif isinstance(e, httpx.ConnectError):
         lines.append(f"\n[dim]Unable to connect to OpenCode server[/dim]")
         if error_msg and "Connection refused" not in error_msg:
             lines.append(f"  [dim]{error_msg}[/dim]")
-    
+
     elif isinstance(e, httpx.ReadError):
         lines.append(f"\n[dim]Connection was interrupted while reading response[/dim]")
         if error_msg:
             lines.append(f"  [dim]{error_msg}[/dim]")
-    
+
     elif isinstance(e, httpx.TimeoutException):
         lines.append(f"\n[dim]Request timed out[/dim]")
         if error_msg:
             lines.append(f"  [dim]{error_msg}[/dim]")
-    
+
     # In debug mode, include traceback
     if DEBUG:
         import traceback
+
         tb_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         lines.append(f"\n[dim]Traceback:[/dim]")
         for line in tb_str.split("\n"):
             lines.append(f"  [dim]{line}[/dim]")
-    
+
     return "\n".join(lines)
 
 

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-15
+
+### Added
+- **Chrome Extension (WIP)**: Beta support for capturing browser traffic via Chrome extension
+  - Alternative to Playwright browser for HAR capture
+  - Works with existing browser sessions
+  - Note: This feature is work in progress and may have limitations
+
+### Fixed
+- **OpenCode Server**: Fixed error formatting and connection handling
+- **Process Title**: Added process title for better identification in system monitors
+- **Auth Error Handling**: Improved handling of authentication failures
+
 ## [0.3.0] - 2026-01-10
 
 ### Added
