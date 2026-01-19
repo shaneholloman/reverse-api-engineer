@@ -356,7 +356,8 @@ class NativeHostHandler:
             har_dir.mkdir(parents=True, exist_ok=True)
 
             har_path = har_dir / "recording.har"
-            har_path.write_text(json.dumps(har_data, indent=2))
+            # Save without indentation for performance (HAR files can be very large)
+            har_path.write_text(json.dumps(har_data, separators=(',', ':')))
 
             self.current_run_id = run_id
 
